@@ -1,29 +1,38 @@
-<script src="https://cdn.tailwindcss.com"></script>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - AI Expense</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
 <body class="bg-slate-50 p-6 font-sans">
     <div class="max-w-5xl mx-auto">
         <div class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-extrabold text-slate-800">Báo cáo tài chính 📈</h1>
-            <a href="{% url 'add_expense' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">+ Thêm chi tiêu</a>
+            <div>
+                <h1 class="text-3xl font-extrabold text-slate-800">Chào, {{ user.username }}! 👋</h1>
+                <p class="text-slate-500">Báo cáo chi tiêu cá nhân của bạn.</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="{% url 'add_expense' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Thêm chi tiêu</a>
+                <a href="{% url 'logout' %}" class="bg-rose-100 text-rose-600 px-4 py-2 rounded-lg hover:bg-rose-200 transition">Đăng xuất</a>
+            </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
             <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-blue-500">
                 <p class="text-slate-400 text-sm font-medium uppercase">Tổng chi tiêu</p>
-                <p class="text-2xl font-bold text-slate-800 mt-1">{{ total_spent }} VNĐ</p>
+                <p class="text-2xl font-bold text-slate-800 mt-1">{{ total }} VNĐ</p>
             </div>
             <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-emerald-500">
                 <p class="text-slate-400 text-sm font-medium uppercase">Số giao dịch</p>
                 <p class="text-2xl font-bold text-slate-800 mt-1">{{ count }} lần</p>
             </div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-amber-500">
-                <p class="text-slate-400 text-sm font-medium uppercase">Trung bình/lần</p>
-                <p class="text-2xl font-bold text-slate-800 mt-1">{% widthratio total_spent count 1 %}đ</p>
-            </div>
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div class="p-6 border-b">
-                <h2 class="text-xl font-bold text-slate-800">Giao dịch gần nhất</h2>
+            <div class="p-6 border-b flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-800">Lịch sử gần đây</h2>
+                <a href="{% url 'report_chart' %}" class="text-blue-600 text-sm font-bold hover:underline">Xem biểu đồ →</a>
             </div>
             <table class="w-full text-left">
                 <thead class="bg-slate-50 text-slate-500 text-sm uppercase">
@@ -35,7 +44,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y">
-                    {% for item in recent_transactions %}
+                    {% for item in transactions %}
                     <tr class="hover:bg-slate-50 transition">
                         <td class="px-6 py-4 text-slate-600">{{ item.created_at|date:"d/m/Y" }}</td>
                         <td class="px-6 py-4">
@@ -48,7 +57,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="px-6 py-10 text-center text-slate-400">Chưa có dữ liệu chi tiêu.</td>
+                        <td colspan="4" class="px-6 py-10 text-center text-slate-400">Bạn chưa có dữ liệu chi tiêu nào.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -56,3 +65,4 @@
         </div>
     </div>
 </body>
+</html>
