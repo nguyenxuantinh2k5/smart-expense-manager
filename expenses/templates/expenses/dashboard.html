@@ -1,0 +1,58 @@
+<script src="https://cdn.tailwindcss.com"></script>
+<body class="bg-slate-50 p-6 font-sans">
+    <div class="max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-extrabold text-slate-800">Báo cáo tài chính 📈</h1>
+            <a href="{% url 'add_expense' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">+ Thêm chi tiêu</a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-blue-500">
+                <p class="text-slate-400 text-sm font-medium uppercase">Tổng chi tiêu</p>
+                <p class="text-2xl font-bold text-slate-800 mt-1">{{ total_spent }} VNĐ</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-emerald-500">
+                <p class="text-slate-400 text-sm font-medium uppercase">Số giao dịch</p>
+                <p class="text-2xl font-bold text-slate-800 mt-1">{{ count }} lần</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-amber-500">
+                <p class="text-slate-400 text-sm font-medium uppercase">Trung bình/lần</p>
+                <p class="text-2xl font-bold text-slate-800 mt-1">{% widthratio total_spent count 1 %}đ</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div class="p-6 border-b">
+                <h2 class="text-xl font-bold text-slate-800">Giao dịch gần nhất</h2>
+            </div>
+            <table class="w-full text-left">
+                <thead class="bg-slate-50 text-slate-500 text-sm uppercase">
+                    <tr>
+                        <th class="px-6 py-4">Ngày</th>
+                        <th class="px-6 py-4">Hạng mục</th>
+                        <th class="px-6 py-4">Ghi chú</th>
+                        <th class="px-6 py-4 text-right">Số tiền</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    {% for item in recent_transactions %}
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="px-6 py-4 text-slate-600">{{ item.created_at|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4">
+                            <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
+                                {{ item.category.name }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-slate-700">{{ item.note }}</td>
+                        <td class="px-6 py-4 text-right font-bold text-rose-500">-{{ item.amount }}đ</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-10 text-center text-slate-400">Chưa có dữ liệu chi tiêu.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
