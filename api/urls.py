@@ -1,7 +1,6 @@
 from django.urls import path
-from . import views
+from .views import TransactionListAPI
 
-# Tạm thời để trống để tránh lỗi ImproperlyConfigured
 urlpatterns = [
-    # Sau này bạn sẽ thêm các API endpoint tại đây
+    path('transactions/', TransactionListAPI.as_view(), name='api_transactions'),
 ]

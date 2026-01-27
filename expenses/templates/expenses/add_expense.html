@@ -1,11 +1,23 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <body class="bg-slate-50 flex items-center justify-center h-screen">
     <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
-        <h1 class="text-2xl font-bold text-slate-800 mb-6 text-center">🤖 AI Expense Tracker</h1>
-        <form method="POST">
+        <h1 class="text-2xl font-bold text-slate-800 mb-6 text-center">🤖 Nhập chi tiêu AI</h1>
+        <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
-            <textarea name="raw_text" rows="3" class="w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ví dụ: Ăn phở 45k..."></textarea>
-            <button class="w-full mt-4 bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition">Phân tích & Lưu</button>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Cách 1: Nhập văn bản</label>
+                <textarea name="raw_text" rows="2" class="w-full p-3 border rounded-xl" placeholder="Ăn sáng 30k..."></textarea>
+            </div>
+            <div class="relative flex py-4 items-center">
+                <div class="flex-grow border-t border-gray-300"></div>
+                <span class="flex-shrink mx-4 text-gray-400 text-sm">HOẶC</span>
+                <div class="flex-grow border-t border-gray-300"></div>
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Cách 2: Tải ảnh hóa đơn</label>
+                <input type="file" name="image_file" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+            </div>
+            <button class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700">Xử lý ngay</button>
         </form>
     </div>
 </body>

@@ -10,7 +10,9 @@ class Transaction(models.Model):
     amount = models.DecimalField(max_digits=12, decimal_places=0)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     note = models.TextField(blank=True)
+    # Thêm trường lưu ảnh hóa đơn
+    image = models.ImageField(upload_to='static/uploads/', null=True, blank=True)
     raw_text = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self): return f"{self.note} - {self.amount}đ"
+    def __str__(self): return f"{self.note} - {self.amount}đ"   

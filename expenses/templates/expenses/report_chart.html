@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Báo cáo chi tiêu - AI Expense</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-50 p-6">
+    <div class="max-w-3xl mx-auto">
+        <div class="flex items-center justify-between mb-8">
+            <h1 class="text-2xl font-bold text-slate-800">📊 Phân tích chi tiêu</h1>
+            <a href="{% url 'dashboard' %}" class="text-blue-600 hover:underline">← Quay lại Dashboard</a>
+        </div>
+
+        <div class="bg-white p-8 rounded-2xl shadow-sm">
+            <canvas id="expenseChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('expenseChart').getContext('2d');
+        
+        // Nhận dữ liệu từ Django view truyền sang
+        const labels = {{ labels|safe }};
+        const dataValues = {{ values|safe }};
+
+        new Chart(ctx, {
+            type: 'doughnut', // Biểu đồ tròn (hình bánh)
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Số tiền (VNĐ)',
+                    data: dataValues,
+                    backgroundColor: [
+                        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
