@@ -21,8 +21,8 @@ try:
 except ImportError as e:
     print(f"Failed to import google.genai: {e}")
 
-try:
-    import google.generativeai
-    print("Found legacy google.generativeai package")
-except ImportError:
-    print("Legacy google.generativeai not found")
+# try:
+#     import google.generativeai
+#     print("Found legacy google.generativeai package")
+# except ImportError:
+#     print("Legacy google.generativeai not found")

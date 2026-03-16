@@ -22,31 +22,45 @@
         const ctx = document.getElementById('expenseChart').getContext('2d');
         
         // Nhận dữ liệu từ Django view truyền sang
-        const labels = {{ labels|safe }};
-        const dataValues = {{ values|safe }};
-
-        new Chart(ctx, {
-            type: 'doughnut', // Biểu đồ tròn (hình bánh)
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Số tiền (VNĐ)',
-                    data: dataValues,
-                    backgroundColor: [
-                        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'
-                    ],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
+        const labels = JSON.parse('{{ labels|safe }}');
+        const dataValues = JSON.parse('{{ values|safe }}');
+        
+        if (!labels || labels.length === 0) {
+            ctx.canvas.parentElement.innerHTML = '<p class="text-center text-gray-500">Chưa có dữ liệu chi tiêu</p>';
+        } else {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Số tiền (VNĐ)',
+                        data: dataValues,
+                        backgroundColor: [
+                            '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
+                            '#8b5cf6', '#64748b', '#ec4899', '#06b6d4'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + 
+                                           context.parsed.y.toLocaleString('vi-VN') + ' VNĐ';
+                                }
+                            }
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
     </script>
 </body>
 </html>
