@@ -1,0 +1,43 @@
+<script src="https://cdn.tailwindcss.com"></script>
+<body class="bg-slate-50">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+            <h1 class="text-2xl font-bold text-slate-800 mb-6 text-center">👤 Hồ Sơ Cá Nhân</h1>
+            
+            <div class="space-y-4 mb-8">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600">Tên đăng nhập</p>
+                    <p class="text-lg font-bold text-slate-800">{{ user.username }}</p>
+                </div>
+                
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600">Email</p>
+                    <p class="text-lg font-bold text-slate-800">{{ user.email|default:"Chưa cập nhật" }}</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600">Tên</p>
+                        <p class="text-lg font-bold text-slate-800">{{ user.first_name|default:"---" }}</p>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600">Họ</p>
+                        <p class="text-lg font-bold text-slate-800">{{ user.last_name|default:"---" }}</p>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600">Ngày tham gia</p>
+                    <p class="text-lg font-bold text-slate-800">{{ user.date_joined|date:"d/m/Y" }}</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-col gap-3 pt-4">
+                <a href="{% url 'edit_profile' %}" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition text-center">✏️ Sửa Thông Tin</a>
+                <a href="{% url 'change_password' %}" class="w-full bg-yellow-600 text-white py-3 rounded-lg font-semibold hover:bg-yellow-700 transition text-center">🔐 Đổi Mật Khẩu</a>
+                <a href="{% url 'budget_history' %}" class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition text-center">💰 Lịch Sử Budget</a>
+                <a href="{% url 'dashboard' %}" class="w-full bg-gray-400 text-white py-3 rounded-lg font-semibold hover:bg-gray-500 text-center transition">← Quay Lại</a>
+            </div>
+        </div>
+    </div>
+</body>

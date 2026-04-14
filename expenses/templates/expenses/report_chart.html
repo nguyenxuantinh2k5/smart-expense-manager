@@ -6,60 +6,164 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-slate-50 p-6">
-    <div class="max-w-3xl mx-auto">
+<body class="bg-slate-50 p-6 font-sans">
+    <div class="max-w-6xl mx-auto">
         <div class="flex items-center justify-between mb-8">
-            <h1 class="text-2xl font-bold text-slate-800">📊 Phân tích chi tiêu</h1>
-            <a href="{% url 'dashboard' %}" class="text-blue-600 hover:underline">← Quay lại Dashboard</a>
+            <h1 class="text-3xl font-bold text-slate-800">📊 Phân tích Chi Tiêu</h1>
+            <a href="{% url 'dashboard' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">← Quay lại Dashboard</a>
         </div>
 
-        <div class="bg-white p-8 rounded-2xl shadow-sm">
-            <canvas id="expenseChart"></canvas>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Biểu đồ Doughnut (tròn) -->
+            <div class="bg-white p-8 rounded-2xl shadow-sm">
+                <h2 class="text-lg font-bold text-slate-800 mb-4">📈 Tỉ lệ chi tiêu theo danh mục</h2>
+                <canvas id="doughnutChart" style="max-height: 300px;"></canvas>
+            </div>
+
+            <!-- Biểu đồ Bar (cột) -->
+            <div class="bg-white p-8 rounded-2xl shadow-sm">
+                <h2 class="text-lg font-bold text-slate-800 mb-4">💰 Chi tiêu từng danh mục (VNĐ)</h2>
+                <canvas id="barChart" style="max-height: 300px;"></canvas>
+            </div>
+        </div>
+
+        <!-- Bảng thống kê chi tiết -->
+        <div class="bg-white p-8 rounded-2xl shadow-sm mt-6">
+            <h2 class="text-lg font-bold text-slate-800 mb-4">📋 Thống kê chi tiết</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50">
+                        <tr class="text-sm font-semibold text-slate-600 uppercase">
+                            <th class="px-4 py-3">Danh mục</th>
+                            <th class="px-4 py-3 text-right">Số tiền</th>
+                            <th class="px-4 py-3 text-right">Tỉ lệ (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y" id="statsTable">
+                        <!-- Được tạo bởi JavaScript -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script>
-        const ctx = document.getElementById('expenseChart').getContext('2d');
-        
-        // Nhận dữ liệu từ Django view truyền sang
         const labels = JSON.parse('{{ labels|safe }}');
         const dataValues = JSON.parse('{{ values|safe }}');
+        const total = dataValues.reduce((a, b) => a + b, 0);
         
         if (!labels || labels.length === 0) {
-            ctx.canvas.parentElement.innerHTML = '<p class="text-center text-gray-500">Chưa có dữ liệu chi tiêu</p>';
+            document.body.innerHTML = '<div class="flex items-center justify-center h-screen"><p class="text-gray-500 text-lg">📭 Chưa có dữ liệu chi tiêu</p></div>';
         } else {
-            new Chart(ctx, {
+            // 🎨 Màu sắc tinh tế
+            const colors = [
+                '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
+                '#8b5cf6', '#64748b', '#ec4899', '#06b6d4',
+                '#14b8a6', '#f97316', '#6366f1', '#0ea5e9'
+            ];
+
+            // 📊 Biểu đồ Doughnut (tròn)
+            const ctxDoughnut = document.getElementById('doughnutChart').getContext('2d');
+            new Chart(ctxDoughnut, {
                 type: 'doughnut',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Số tiền (VNĐ)',
                         data: dataValues,
-                        backgroundColor: [
-                            '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
-                            '#8b5cf6', '#64748b', '#ec4899', '#06b6d4'
-                        ],
-                        borderWidth: 2,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderWidth: 3,
                         borderColor: '#fff'
                     }]
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: true,
                     plugins: {
                         legend: {
                             position: 'bottom',
+                            labels: { font: { size: 12 }, padding: 15 }
                         },
                         tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
                             callbacks: {
                                 label: function(context) {
+                                    const value = context.parsed;
+                                    const percent = ((value / total) * 100).toFixed(1);
                                     return context.label + ': ' + 
-                                           context.parsed.y.toLocaleString('vi-VN') + ' VNĐ';
+                                           value.toLocaleString('vi-VN') + ' VNĐ (' + 
+                                           percent + '%)';
                                 }
                             }
                         }
                     }
                 }
             });
+
+            // 📊 Biểu đồ Bar (cột)
+            const ctxBar = document.getElementById('barChart').getContext('2d');
+            new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Chi tiêu (VNĐ)',
+                        data: dataValues,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString('vi-VN') + ' đ';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 📋 Bảng thống kê
+            const table = document.getElementById('statsTable');
+            labels.forEach((label, index) => {
+                const row = document.createElement('tr');
+                const percent = ((dataValues[index] / total) * 100).toFixed(1);
+                row.innerHTML = `
+                    <td class="px-4 py-3 font-medium text-slate-800">
+                        <span class="inline-block w-3 h-3 rounded-full mr-2" 
+                              style="background-color: ${colors[index]}"></span>
+                        ${label}
+                    </td>
+                    <td class="px-4 py-3 text-right font-bold text-rose-600">
+                        ${dataValues[index].toLocaleString('vi-VN')} đ
+                    </td>
+                    <td class="px-4 py-3 text-right text-slate-600">
+                        ${percent}%
+                    </td>
+                `;
+                table.appendChild(row);
+            });
+
+            // Thêm dòng Tổng cộng
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'bg-slate-100 font-bold';
+            totalRow.innerHTML = `
+                <td class="px-4 py-3 text-slate-800">Tổng cộng</td>
+                <td class="px-4 py-3 text-right text-slate-800">${total.toLocaleString('vi-VN')} đ</td>
+                <td class="px-4 py-3 text-right text-slate-800">100%</td>
+            `;
+            table.appendChild(totalRow);
         }
     </script>
 </body>

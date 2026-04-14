@@ -1,0 +1,45 @@
+<script src="https://cdn.tailwindcss.com"></script>
+<body class="bg-slate-50">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+            <h1 class="text-2xl font-bold text-red-600 mb-6 text-center">🗑️ Xóa Chi Tiêu</h1>
+            
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                <p class="text-sm text-yellow-800">
+                    <strong>⚠️ Cảnh báo:</strong> Bạn sắp xóa bản ghi này. Hành động này không thể hoàn tác!
+                </p>
+            </div>
+            
+            <div class="bg-gray-50 p-4 rounded-lg mb-6 space-y-2">
+                <p class="text-sm">
+                    <span class="font-semibold text-gray-700">Danh mục:</span>
+                    <span class="text-gray-900">{{ transaction.category.name }}</span>
+                </p>
+                <p class="text-sm">
+                    <span class="font-semibold text-gray-700">Số tiền:</span>
+                    <span class="text-red-600 font-bold text-lg">{{ transaction.amount|floatformat:0 }}đ</span>
+                </p>
+                <p class="text-sm">
+                    <span class="font-semibold text-gray-700">Ghi chú:</span>
+                    <span class="text-gray-900">{{ transaction.note }}</span>
+                </p>
+                <p class="text-xs text-gray-500">
+                    Ngày tạo: {{ transaction.created_at|date:"d/m/Y H:i" }}
+                </p>
+            </div>
+            
+            <form method="POST" class="space-y-3">
+                {% csrf_token %}
+                
+                <div class="flex gap-3">
+                    <button type="submit" class="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition">
+                        Xác nhận Xóa
+                    </button>
+                    <a href="{% url 'dashboard' %}" class="flex-1 bg-gray-400 text-white py-3 rounded-lg font-semibold hover:bg-gray-500 text-center transition">
+                        Hủy
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
