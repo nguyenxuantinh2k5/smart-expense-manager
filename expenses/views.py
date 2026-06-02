@@ -44,6 +44,7 @@ def add_expense(request):
     if request.method == "POST":
         ai = ExpenseAI()
         image_file = request.FILES.get('image_file')
+        image_item_name = request.POST.get('image_item_name', '').strip()
         raw_text = request.POST.get('raw_text')
         error_message = None
 
@@ -68,10 +69,13 @@ def add_expense(request):
                         )
                         
                         # ✅ Call AI service with error handling
-                        res = ai.analyze_image(temp_trans.image.path)
+                        if image_item_name:
+                            res = ai.analyze_image_item(temp_trans.image.path, image_item_name)
+                        else:
+                            res = ai.analyze_image(temp_trans.image.path)
                         
-                        if not res:
-                            error_message = "❌ Không thể phân tích ảnh"
+                        if not res or float(res.get('amount') or 0) <= 0:
+                            error_message = res.get('note', "Không thể phân tích ảnh") if res else "Không thể phân tích ảnh"
                             temp_trans.delete()
                         else:
                             # ✅ Update transaction
