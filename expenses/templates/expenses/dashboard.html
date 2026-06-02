@@ -14,10 +14,29 @@
             </div>
             <div class="flex gap-3 flex-wrap">
                 <a href="{% url 'add_expense' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm">✏️ Thêm chi tiêu</a>
-                <a href="{% url 'export_expenses' %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm">📥 Xuất CSV</a>
+                <a href="{% url 'export_expenses' %}{% if export_query %}?{{ export_query }}{% endif %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm">📥 Xuất XLSX</a>
                 <a href="{% url 'user_profile' %}" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-sm">👤 Hồ sơ</a>
                 <a href="{% url 'logout' %}" class="bg-rose-100 text-rose-600 px-4 py-2 rounded-lg hover:bg-rose-200 transition text-sm">Đăng xuất</a>
             </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <a href="{% url 'smart_report' %}" class="bg-white border border-blue-100 p-5 rounded-xl shadow-sm hover:border-blue-400 hover:shadow transition">
+                <p class="text-sm text-blue-600 font-semibold mb-1">Báo cáo hỏi đáp</p>
+                <p class="text-slate-600 text-sm">Hỏi nhanh: tháng này tốn nhiều nhất vào đâu?</p>
+            </a>
+            <a href="{% url 'split_bill' %}" class="bg-white border border-emerald-100 p-5 rounded-xl shadow-sm hover:border-emerald-400 hover:shadow transition">
+                <p class="text-sm text-emerald-600 font-semibold mb-1">Chia bill</p>
+                <p class="text-slate-600 text-sm">Tính phần mỗi người và lưu lịch sử bill.</p>
+            </a>
+            <a href="{% url 'recurring_expenses' %}" class="bg-white border border-purple-100 p-5 rounded-xl shadow-sm hover:border-purple-400 hover:shadow transition">
+                <p class="text-sm text-purple-600 font-semibold mb-1">Chi tiêu định kỳ</p>
+                <p class="text-slate-600 text-sm">Quản lý Netflix, tiền trọ, internet...</p>
+            </a>
+            <a href="{% url 'report_chart' %}" class="bg-white border border-amber-100 p-5 rounded-xl shadow-sm hover:border-amber-400 hover:shadow transition">
+                <p class="text-sm text-amber-600 font-semibold mb-1">Biểu đồ</p>
+                <p class="text-slate-600 text-sm">Xem thống kê theo danh mục chi tiêu.</p>
+            </a>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Báo cáo thông minh</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-bold text-slate-800">Báo cáo thông minh</h1>
+            <a href="{% url 'dashboard' %}" class="text-blue-600 hover:underline">Dashboard</a>
+        </div>
+
+        <form method="POST" class="bg-white p-5 rounded-xl shadow mb-6">
+            {% csrf_token %}
+            <label class="block text-sm font-medium text-slate-700 mb-2">Bạn muốn hỏi gì về chi tiêu?</label>
+            <textarea name="question" rows="3" class="w-full p-3 border rounded-lg" placeholder="VD: Tháng này tôi tốn nhiều nhất vào đâu?">{{ question }}</textarea>
+            <button type="submit" class="mt-4 bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700">Hỏi báo cáo</button>
+        </form>
+
+        {% if result %}
+            <section class="bg-white p-5 rounded-xl shadow mb-6">
+                <h2 class="font-semibold text-slate-800 mb-3">Kết quả</h2>
+                <p class="text-slate-700 mb-4">{{ result.answer }}</p>
+                {% if result.rows %}
+                    <div class="divide-y">
+                        {% for row in result.rows %}
+                            <div class="flex items-start justify-between gap-4 py-3">
+                                <div>
+                                    <p class="text-slate-700">{{ row.label }}</p>
+                                    {% if row.detail %}
+                                        <p class="text-xs text-slate-500 mt-1">{{ row.detail }}</p>
+                                    {% endif %}
+                                </div>
+                                <span class="font-semibold text-slate-900">{{ row.value }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </section>
+        {% endif %}
+
+        <section class="bg-blue-50 border border-blue-100 p-5 rounded-xl">
+            <h2 class="font-semibold text-blue-900 mb-3">Gợi ý câu hỏi</h2>
+            <div class="grid md:grid-cols-2 gap-2">
+                {% for example in examples %}
+                    <div class="text-sm text-blue-800 bg-white/70 rounded-lg px-3 py-2">{{ example }}</div>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+</body>
+</html>

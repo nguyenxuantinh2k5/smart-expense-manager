@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Chi tiêu định kỳ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <main class="max-w-5xl mx-auto px-4 py-8">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-bold text-slate-800">Chi tiêu định kỳ</h1>
+            <a href="{% url 'dashboard' %}" class="text-blue-600 hover:underline">Dashboard</a>
+        </div>
+        <p class="text-sm text-slate-500 mb-5">
+            Khoản định kỳ được lưu thành lịch riêng. Nếu ngày đến hạn là hôm nay hoặc đã qua, app sẽ tạo giao dịch ngay; nếu là ngày tương lai, giao dịch sẽ được tạo khi bạn bấm "Tạo khoản đến hạn".
+        </p>
+
+        {% if error %}
+            <div class="mb-5 p-4 bg-red-100 border border-red-300 rounded-lg text-red-700">{{ error }}</div>
+        {% endif %}
+        {% if success %}
+            <div class="mb-5 p-4 bg-green-100 border border-green-300 rounded-lg text-green-700">{{ success }}</div>
+        {% endif %}
+
+        <div class="grid lg:grid-cols-2 gap-6">
+            <form method="POST" class="bg-white p-5 rounded-xl shadow">
+                {% csrf_token %}
+                <label class="block text-sm font-medium text-slate-700 mb-2">Tên khoản định kỳ</label>
+                <input name="title" class="w-full p-3 border rounded-lg mb-4" placeholder="VD: Netflix, tiền trọ, internet">
+
+                <label class="block text-sm font-medium text-slate-700 mb-2">Số tiền</label>
+                <input name="amount" type="number" step="1000" class="w-full p-3 border rounded-lg mb-4" placeholder="260000">
+
+                <label class="block text-sm font-medium text-slate-700 mb-2">Danh mục</label>
+                <input name="category" list="category-list" class="w-full p-3 border rounded-lg mb-4" placeholder="VD: Đăng ký dịch vụ">
+                <datalist id="category-list">
+                    {% for category in category_choices %}
+                        <option value="{{ category }}"></option>
+                    {% endfor %}
+                </datalist>
+
+                <label class="block text-sm font-medium text-slate-700 mb-2">Chu kỳ</label>
+                <select name="frequency" class="w-full p-3 border rounded-lg mb-4">
+                    {% for value, label in frequency_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+
+                <label class="block text-sm font-medium text-slate-700 mb-2">Ngày đến hạn tiếp theo</label>
+                <input name="next_due_date" type="date" value="{{ today }}" class="w-full p-3 border rounded-lg mb-4">
+
+                <label class="block text-sm font-medium text-slate-700 mb-2">Ghi chú</label>
+                <textarea name="note" rows="2" class="w-full p-3 border rounded-lg mb-4"></textarea>
+
+                <button type="submit" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700">Thêm định kỳ</button>
+            </form>
+
+            <section class="bg-white p-5 rounded-xl shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-semibold text-slate-800">Danh sách định kỳ</h2>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="generate_due">
+                        <button type="submit" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm">Tạo khoản đến hạn</button>
+                    </form>
+                </div>
+                <div class="divide-y">
+                    {% for item in recurring_items %}
+                        <div class="py-3">
+                            <div class="flex justify-between">
+                                <span class="font-medium">{{ item.title }}</span>
+                                <span>{{ item.amount|floatformat:0 }}đ</span>
+                            </div>
+                            <p class="text-sm text-slate-500">
+                                {{ item.get_frequency_display }} · đến hạn {{ item.next_due_date|date:"d/m/Y" }}
+                                {% if item.category %} · {{ item.category.name }}{% endif %}
+                            </p>
+                        </div>
+                    {% empty %}
+                        <p class="text-slate-500">Chưa có khoản định kỳ nào.</p>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    </main>
+</body>
+</html>

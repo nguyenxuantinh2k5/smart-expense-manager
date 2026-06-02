@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Chia bill</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <main class="max-w-5xl mx-auto px-4 py-8">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-bold text-slate-800">Chia bill</h1>
+            <a href="{% url 'dashboard' %}" class="text-blue-600 hover:underline">Dashboard</a>
+        </div>
+
+        {% if error %}
+            <div class="mb-5 p-4 bg-red-100 border border-red-300 rounded-lg text-red-700">{{ error }}</div>
+        {% endif %}
+
+        <div class="grid lg:grid-cols-2 gap-6">
+            <form method="POST" class="bg-white p-5 rounded-xl shadow">
+                {% csrf_token %}
+                <label class="block text-sm font-medium text-slate-700 mb-2">Tên bill</label>
+                <input name="title" class="w-full p-3 border rounded-lg mb-4" placeholder="VD: Ăn tối nhóm">
+
+                <label class="block text-sm font-medium text-slate-700 mb-2">Tổng tiền</label>
+                <input name="total_amount" type="number" step="1000" class="w-full p-3 border rounded-lg mb-4" placeholder="450000">
+
+                <label class="block text-sm font-medium text-slate-700 mb-2">Số người</label>
+                <input name="people_count" type="number" min="1" value="2" class="w-full p-3 border rounded-lg mb-4">
+
+                <label class="block text-sm font-medium text-slate-700 mb-2">Tên người tham gia</label>
+                <textarea name="participant_names" rows="3" class="w-full p-3 border rounded-lg mb-4" placeholder="Mỗi dòng hoặc cách nhau bằng dấu phẩy"></textarea>
+
+                <label class="block text-sm font-medium text-slate-700 mb-2">Người trả trước</label>
+                <input name="payer_name" class="w-full p-3 border rounded-lg mb-4" placeholder="VD: Tôi">
+
+                <label class="block text-sm font-medium text-slate-700 mb-2">Danh mục khi lưu vào chi tiêu</label>
+                <input name="category" list="split-category-list" class="w-full p-3 border rounded-lg mb-4" placeholder="VD: Ăn uống">
+                <datalist id="split-category-list">
+                    {% for category in category_choices %}
+                        <option value="{{ category }}"></option>
+                    {% endfor %}
+                </datalist>
+
+                <label class="flex items-center gap-2 text-sm text-slate-700 mb-4">
+                    <input type="checkbox" name="save_as_expense" checked class="h-4 w-4">
+                    Lưu phần của tôi vào lịch sử chi tiêu
+                </label>
+
+                <label class="block text-sm font-medium text-slate-700 mb-2">Ghi chú</label>
+                <textarea name="note" rows="2" class="w-full p-3 border rounded-lg mb-4"></textarea>
+
+                <button type="submit" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700">Tính chia bill</button>
+            </form>
+
+            <section class="bg-white p-5 rounded-xl shadow">
+                <h2 class="font-semibold text-slate-800 mb-4">Kết quả mới nhất</h2>
+                {% if result_bill %}
+                    <div class="mb-4">
+                        <p class="text-slate-700">{{ result_bill.title }}</p>
+                        <p class="text-2xl font-bold text-slate-900">{{ result_bill.total_amount|floatformat:0 }}đ</p>
+                        <p class="text-sm text-slate-500">Mỗi người: {{ result_bill.share_amount|floatformat:0 }}đ</p>
+                        <p class="text-xs text-emerald-700 mt-2">Nếu đã chọn lưu, phần của bạn đã được thêm vào lịch sử chi tiêu.</p>
+                    </div>
+                    <div class="divide-y">
+                        {% for participant in result_bill.participants.all %}
+                            <div class="flex justify-between py-3">
+                                <span>{{ participant.name }}</span>
+                                <span class="font-semibold">{{ participant.share_amount|floatformat:0 }}đ</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-slate-500">Nhập thông tin bill để tính phần mỗi người.</p>
+                {% endif %}
+            </section>
+        </div>
+
+        <section class="bg-white p-5 rounded-xl shadow mt-6">
+            <h2 class="font-semibold text-slate-800 mb-4">Bill gần đây</h2>
+            <div class="divide-y">
+                {% for bill in recent_bills %}
+                    <div class="py-3">
+                        <div class="flex justify-between">
+                            <span class="font-medium">{{ bill.title }}</span>
+                            <span>{{ bill.total_amount|floatformat:0 }}đ</span>
+                        </div>
+                        <p class="text-sm text-slate-500">{{ bill.people_count }} người, mỗi người {{ bill.share_amount|floatformat:0 }}đ</p>
+                    </div>
+                {% empty %}
+                    <p class="text-slate-500">Chưa có bill nào.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+</body>
+</html>

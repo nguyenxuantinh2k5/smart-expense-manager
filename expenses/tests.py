@@ -1,6 +1,10 @@
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
-from .models import Category, Transaction
+from datetime import date, timedelta
+from decimal import Decimal
+from io import BytesIO
+from zipfile import ZipFile
+from .models import Category, CategoryRule, RecurringExpense, SplitBill, Transaction
 from .ai_services import ExpenseAI
 import json
 from unittest.mock import patch
@@ -57,6 +61,15 @@ class AuthenticationTest(TestCase):
     def test_dashboard_requires_login(self):
         response = self.client.get('/dashboard/')
         self.assertEqual(response.status_code, 302)  # Redirect to login
+
+    def test_dashboard_has_feature_links(self):
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get('/dashboard/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '/smart-report/')
+        self.assertContains(response, '/split-bill/')
+        self.assertContains(response, '/recurring/')
+        self.assertContains(response, 'Xuất XLSX')
 
 class AIServicesTest(TestCase):
     def setUp(self):
@@ -194,3 +207,210 @@ class AIServicesTest(TestCase):
         self.assertEqual(result["item"], "Coca")
         self.assertEqual(result["quantity"], 4)
         self.assertEqual(result["unit_price"], 25000)
+
+class FeatureWorkflowTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='featureuser',
+            email='feature@example.com',
+            password='testpass123'
+        )
+        self.client.login(username='featureuser', password='testpass123')
+        self.food = Category.objects.create(name="\u0102n u\u1ed1ng")
+        self.other = Category.objects.create(name="Kh\u00e1c")
+
+    def test_smart_report_answers_top_category(self):
+        Transaction.objects.create(user=self.user, amount=100000, category=self.food, note='Cơm')
+        Transaction.objects.create(user=self.user, amount=30000, category=self.other, note='Khác')
+
+        response = self.client.post('/smart-report/', {
+            'question': 'Tháng này tôi tốn nhiều nhất vào đâu?'
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("\u0102n u\u1ed1ng", response.context['result']['answer'])
+
+    def test_smart_report_answers_detailed_category_question(self):
+        Transaction.objects.create(user=self.user, amount=100000, category=self.food, note='Cơm văn phòng')
+        Transaction.objects.create(user=self.user, amount=50000, category=self.food, note='Cafe')
+        Transaction.objects.create(user=self.user, amount=30000, category=self.other, note='Khác')
+
+        response = self.client.post('/smart-report/', {
+            'question': 'Chi tiết ăn uống tháng này gồm những khoản nào?'
+        })
+
+        self.assertEqual(response.status_code, 200)
+        result = response.context['result']
+        self.assertIn("\u0102n u\u1ed1ng", result['answer'])
+        labels = [row['label'] for row in result['rows']]
+        self.assertIn('Cơm văn phòng', labels)
+        self.assertIn('Cafe', labels)
+
+    def test_smart_report_recognizes_all_ai_category_names(self):
+        tech = Category.objects.create(name='Công nghệ')
+        Transaction.objects.create(user=self.user, amount=15000000, category=tech, note='Laptop')
+        Transaction.objects.create(user=self.user, amount=100000, category=self.food, note='Cơm')
+
+        response = self.client.post('/smart-report/', {
+            'question': 'Công nghệ chiếm bao nhiêu phần trăm tháng này?'
+        })
+
+        self.assertEqual(response.status_code, 200)
+        result = response.context['result']
+        self.assertIn('Công nghệ', result['answer'])
+        self.assertIn('%', result['answer'])
+        self.assertEqual(result['rows'][0]['label'], 'Công nghệ')
+
+    def test_smart_report_answers_category_breakdown(self):
+        Transaction.objects.create(user=self.user, amount=100000, category=self.food, note='Cơm')
+        Transaction.objects.create(user=self.user, amount=30000, category=self.other, note='Khác')
+
+        response = self.client.post('/smart-report/', {
+            'question': 'Từng loại chi tiêu tháng này chi bao nhiêu?'
+        })
+
+        self.assertEqual(response.status_code, 200)
+        labels = [row['label'] for row in response.context['result']['rows']]
+        self.assertIn("\u0102n u\u1ed1ng", labels)
+        self.assertIn('Khác', labels)
+
+    def test_bill_and_recurring_forms_show_full_ai_category_choices(self):
+        split_response = self.client.get('/split-bill/')
+        recurring_response = self.client.get('/recurring/')
+
+        self.assertEqual(split_response.status_code, 200)
+        self.assertEqual(recurring_response.status_code, 200)
+        for response in (split_response, recurring_response):
+            self.assertContains(response, 'Công nghệ')
+            self.assertContains(response, 'Đăng ký dịch vụ')
+            self.assertContains(response, 'Bảo hiểm')
+
+    def test_export_expenses_returns_valid_xlsx_file(self):
+        Transaction.objects.create(user=self.user, amount=100000, category=self.food, note='Cơm văn phòng')
+
+        response = self.client.get('/export/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response['Content-Type'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        self.assertIn('.xlsx', response['Content-Disposition'])
+
+        with ZipFile(BytesIO(response.content)) as workbook:
+            self.assertIn('[Content_Types].xml', workbook.namelist())
+            self.assertIn('xl/worksheets/sheet1.xml', workbook.namelist())
+            sheet_xml = workbook.read('xl/worksheets/sheet1.xml').decode('utf-8')
+
+        self.assertIn('Ngày tạo', sheet_xml)
+        self.assertIn("\u0102n u\u1ed1ng", sheet_xml)
+        self.assertIn('Cơm văn phòng', sheet_xml)
+        self.assertIn('100000', sheet_xml)
+
+    def test_export_expenses_xlsx_uses_filters(self):
+        transport = Category.objects.create(name='Di chuyển')
+        Transaction.objects.create(user=self.user, amount=100000, category=self.food, note='Cơm văn phòng')
+        Transaction.objects.create(user=self.user, amount=50000, category=transport, note='Taxi')
+
+        response = self.client.get('/export/', {
+            'category': "\u0102n u\u1ed1ng",
+            'search': 'Cơm',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        with ZipFile(BytesIO(response.content)) as workbook:
+            sheet_xml = workbook.read('xl/worksheets/sheet1.xml').decode('utf-8')
+
+        self.assertIn('Cơm văn phòng', sheet_xml)
+        self.assertNotIn('Taxi', sheet_xml)
+
+    def test_edit_transaction_creates_learning_rule(self):
+        transaction = Transaction.objects.create(
+            user=self.user,
+            amount=55000,
+            category=self.other,
+            note='Highlands',
+            raw_text='Highlands 55k',
+        )
+
+        response = self.client.post(f'/edit/{transaction.id}/', {
+            'amount': '55000',
+            'category': "\u0102n u\u1ed1ng",
+            'note': 'Highlands',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(CategoryRule.objects.filter(
+            user=self.user,
+            keyword='highlands',
+            category=self.food,
+        ).exists())
+
+    def test_learned_rule_overrides_ai_category_for_text(self):
+        CategoryRule.objects.create(user=self.user, keyword='highlands', category=self.food)
+
+        with patch('expenses.views.ExpenseAI.analyze_text', return_value={
+            'amount': 55000,
+            'category': 'Kh\u00e1c',
+            'note': 'Highlands',
+        }):
+            response = self.client.post('/add/', {
+                'raw_text': 'Highlands 55k',
+            })
+
+        self.assertEqual(response.status_code, 302)
+        transaction = Transaction.objects.get(user=self.user, note='Highlands')
+        self.assertEqual(transaction.category, self.food)
+
+    def test_split_bill_creates_participants(self):
+        response = self.client.post('/split-bill/', {
+            'title': 'Ăn tối',
+            'total_amount': '300000',
+            'people_count': '3',
+            'participant_names': 'A, B, C',
+            'payer_name': 'A',
+            'category': "\u0102n u\u1ed1ng",
+            'save_as_expense': 'on',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        bill = SplitBill.objects.get(user=self.user, title='Ăn tối')
+        self.assertEqual(bill.participants.count(), 3)
+        self.assertEqual(bill.participants.first().share_amount, Decimal('100000.00'))
+        transaction = Transaction.objects.get(user=self.user, raw_text=f'split_bill:{bill.id}')
+        self.assertEqual(transaction.amount, Decimal('100000.00'))
+        self.assertEqual(transaction.category, self.food)
+
+    def test_recurring_expense_generates_due_transaction(self):
+        RecurringExpense.objects.create(
+            user=self.user,
+            title='Netflix',
+            amount=260000,
+            category=self.food,
+            frequency=RecurringExpense.FREQUENCY_MONTHLY,
+            next_due_date=date.today() - timedelta(days=1),
+        )
+
+        response = self.client.post('/recurring/', {
+            'action': 'generate_due',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(Transaction.objects.filter(user=self.user, note='Netflix').exists())
+        recurring = RecurringExpense.objects.get(user=self.user, title='Netflix')
+        self.assertGreater(recurring.next_due_date, date.today())
+
+    def test_adding_due_recurring_expense_creates_transaction_immediately(self):
+        response = self.client.post('/recurring/', {
+            'title': 'Internet',
+            'amount': '180000',
+            'category': 'Sinh hoạt',
+            'frequency': RecurringExpense.FREQUENCY_MONTHLY,
+            'next_due_date': date.today().isoformat(),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(Transaction.objects.filter(user=self.user, note='Internet').exists())
+        recurring = RecurringExpense.objects.get(user=self.user, title='Internet')
+        self.assertGreater(recurring.next_due_date, date.today())
