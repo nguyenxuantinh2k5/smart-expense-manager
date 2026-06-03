@@ -1,6 +1,7 @@
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
-from datetime import date, timedelta
+from django.utils import timezone
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from io import BytesIO
 from zipfile import ZipFile
@@ -244,6 +245,73 @@ class FeatureWorkflowTest(TestCase):
         self.assertContains(response, '5.000.000đ')
         self.assertContains(response, '3.027.000đ')
         self.assertNotContains(response, 'value="None"')
+
+    def test_dashboard_filters_by_single_fields_and_combines_them(self):
+        transport = Category.objects.create(name='Di chuyển')
+        food_current = Transaction.objects.create(
+            user=self.user,
+            amount=100000,
+            category=self.food,
+            note='Cơm văn phòng',
+            raw_text='an trua 100k',
+        )
+        transport_current = Transaction.objects.create(
+            user=self.user,
+            amount=50000,
+            category=transport,
+            note='Taxi sân bay',
+            raw_text='grab 50k',
+        )
+        food_old = Transaction.objects.create(
+            user=self.user,
+            amount=70000,
+            category=self.food,
+            note='Cơm tháng trước',
+            raw_text='com cu 70k',
+        )
+
+        Transaction.objects.filter(id=food_current.id).update(
+            created_at=timezone.make_aware(datetime(2026, 6, 10, 12, 0))
+        )
+        Transaction.objects.filter(id=transport_current.id).update(
+            created_at=timezone.make_aware(datetime(2026, 6, 11, 12, 0))
+        )
+        Transaction.objects.filter(id=food_old.id).update(
+            created_at=timezone.make_aware(datetime(2026, 5, 20, 12, 0))
+        )
+
+        response = self.client.get('/dashboard/', {'search': 'Cơm'})
+        self.assertContains(response, 'Cơm văn phòng')
+        self.assertContains(response, 'Cơm tháng trước')
+        self.assertNotContains(response, 'Taxi sân bay')
+
+        response = self.client.get('/dashboard/', {'search': '100.000'})
+        self.assertContains(response, 'Cơm văn phòng')
+        self.assertNotContains(response, 'Taxi sân bay')
+        self.assertNotContains(response, 'Cơm tháng trước')
+
+        response = self.client.get('/dashboard/', {'category': "\u0102n u\u1ed1ng"})
+        self.assertContains(response, 'Cơm văn phòng')
+        self.assertContains(response, 'Cơm tháng trước')
+        self.assertNotContains(response, 'Taxi sân bay')
+
+        response = self.client.get('/dashboard/', {
+            'date_from': '2026-06-01',
+            'date_to': '2026-06-30',
+        })
+        self.assertContains(response, 'Cơm văn phòng')
+        self.assertContains(response, 'Taxi sân bay')
+        self.assertNotContains(response, 'Cơm tháng trước')
+
+        response = self.client.get('/dashboard/', {
+            'category': "\u0102n u\u1ed1ng",
+            'search': 'văn phòng',
+            'date_from': '2026-06-01',
+            'date_to': '2026-06-30',
+        })
+        self.assertContains(response, 'Cơm văn phòng')
+        self.assertNotContains(response, 'Taxi sân bay')
+        self.assertNotContains(response, 'Cơm tháng trước')
 
     def test_smart_report_answers_detailed_category_question(self):
         Transaction.objects.create(user=self.user, amount=100000, category=self.food, note='Cơm văn phòng')

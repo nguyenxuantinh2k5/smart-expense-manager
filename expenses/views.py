@@ -3,7 +3,7 @@ from django.contrib.auth import login, authenticate, logout, update_session_auth
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from django.db.models import Avg, Count, Sum
+from django.db.models import Avg, Count, Q, Sum
 from django.http import HttpResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.utils import timezone
@@ -133,6 +133,58 @@ def _month_bounds(year, month):
     else:
         end = datetime(year, month + 1, 1)
     return timezone.make_aware(start), timezone.make_aware(end)
+
+
+def _parse_filter_date(value):
+    try:
+        return datetime.strptime(value, '%Y-%m-%d').date()
+    except (TypeError, ValueError):
+        return None
+
+
+def _start_of_day(value):
+    return timezone.make_aware(datetime.combine(value, datetime.min.time()))
+
+
+def _parse_search_amount(value):
+    digits = re.sub(r'\D', '', value or '')
+    return Decimal(digits) if digits else None
+
+
+def _filter_transaction_queryset(transactions, params):
+    category_filter = (params.get('category') or '').strip()
+    date_from_raw = (params.get('date_from') or '').strip()
+    date_to_raw = (params.get('date_to') or '').strip()
+    search_query = (params.get('search') or '').strip()
+
+    if category_filter:
+        transactions = transactions.filter(category__name=category_filter)
+
+    date_from = _parse_filter_date(date_from_raw)
+    if date_from:
+        transactions = transactions.filter(created_at__gte=_start_of_day(date_from))
+
+    date_to = _parse_filter_date(date_to_raw)
+    if date_to:
+        transactions = transactions.filter(created_at__lt=_start_of_day(date_to + timedelta(days=1)))
+
+    if search_query:
+        search_filter = (
+            Q(note__icontains=search_query) |
+            Q(raw_text__icontains=search_query) |
+            Q(category__name__icontains=search_query)
+        )
+        search_amount = _parse_search_amount(search_query)
+        if search_amount is not None:
+            search_filter |= Q(amount=search_amount)
+        transactions = transactions.filter(search_filter)
+
+    return transactions, {
+        'category': category_filter,
+        'date_from': date_from_raw,
+        'date_to': date_to_raw,
+        'search': search_query,
+    }
 
 
 def _query_period(user, normalized_query):
@@ -575,25 +627,8 @@ def delete_expense(request, transaction_id):
 
 @login_required(login_url='login')
 def dashboard(request):
-    transactions = Transaction.objects.filter(user=request.user).order_by('-created_at')
-    
-    # 🔍 Filter by category
-    category_filter = request.GET.get('category', '')
-    if category_filter and category_filter != '':
-        transactions = transactions.filter(category__name=category_filter)
-    
-    # 🔍 Filter by date range
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
-    if date_from:
-        transactions = transactions.filter(created_at__gte=date_from)
-    if date_to:
-        transactions = transactions.filter(created_at__lte=date_to + ' 23:59:59')
-    
-    # 🔍 Search by note
-    search_query = request.GET.get('search', '')
-    if search_query:
-        transactions = transactions.filter(note__icontains=search_query)
+    transactions = Transaction.objects.filter(user=request.user).select_related('category').order_by('-created_at')
+    transactions, filter_state = _filter_transaction_queryset(transactions, request.GET)
     
     # 💰 Calculate totals
     total = transactions.aggregate(Sum('amount'))['amount__sum'] or 0
@@ -648,10 +683,10 @@ def dashboard(request):
         'count': count,
         'average': average,
         'categories': categories,
-        'selected_category': category_filter,
-        'search_query': search_query,
-        'date_from': date_from,
-        'date_to': date_to,
+        'selected_category': filter_state['category'],
+        'search_query': filter_state['search'],
+        'date_from': filter_state['date_from'],
+        'date_to': filter_state['date_to'],
         'paginator': paginator,
         'page_obj': transactions_page,
         'budget_info': budget_info,
@@ -935,34 +970,9 @@ def _build_expenses_xlsx(rows):
     return output.getvalue()
 
 
-def _parse_export_date(value):
-    try:
-        return datetime.strptime(value, '%Y-%m-%d').date()
-    except (TypeError, ValueError):
-        return None
-
-
 def _filtered_export_transactions(request):
     transactions = Transaction.objects.filter(user=request.user).select_related('category').order_by('-created_at')
-
-    category_filter = request.GET.get('category', '')
-    if category_filter:
-        transactions = transactions.filter(category__name=category_filter)
-
-    date_from = _parse_export_date(request.GET.get('date_from'))
-    if date_from:
-        start = timezone.make_aware(datetime.combine(date_from, datetime.min.time()))
-        transactions = transactions.filter(created_at__gte=start)
-
-    date_to = _parse_export_date(request.GET.get('date_to'))
-    if date_to:
-        end = timezone.make_aware(datetime.combine(date_to + timedelta(days=1), datetime.min.time()))
-        transactions = transactions.filter(created_at__lt=end)
-
-    search_query = request.GET.get('search', '')
-    if search_query:
-        transactions = transactions.filter(note__icontains=search_query)
-
+    transactions, _filter_state = _filter_transaction_queryset(transactions, request.GET)
     return transactions
 
 
