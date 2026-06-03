@@ -71,7 +71,7 @@ def _parse_decimal(value):
 
 def _format_money(value):
     value = Decimal(value or 0)
-    return f"{value:,.0f}đ"
+    return f"{value:,.0f}".replace(',', '.') + 'đ'
 
 
 def _category_choices():
@@ -578,26 +578,27 @@ def dashboard(request):
     transactions = Transaction.objects.filter(user=request.user).order_by('-created_at')
     
     # 🔍 Filter by category
-    category_filter = request.GET.get('category')
+    category_filter = request.GET.get('category', '')
     if category_filter and category_filter != '':
         transactions = transactions.filter(category__name=category_filter)
     
     # 🔍 Filter by date range
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
     if date_from:
         transactions = transactions.filter(created_at__gte=date_from)
     if date_to:
         transactions = transactions.filter(created_at__lte=date_to + ' 23:59:59')
     
     # 🔍 Search by note
-    search_query = request.GET.get('search')
+    search_query = request.GET.get('search', '')
     if search_query:
         transactions = transactions.filter(note__icontains=search_query)
     
     # 💰 Calculate totals
     total = transactions.aggregate(Sum('amount'))['amount__sum'] or 0
     count = transactions.count()
+    average = (total / count) if count else 0
     
     # 📂 Get categories for filter dropdown
     categories = Category.objects.all()
@@ -621,11 +622,7 @@ def dashboard(request):
     budget_info = {}
     try:
         current_budget = Budget.objects.get(user=request.user, year=current_year, month=current_month)
-        month_start = datetime(current_year, current_month, 1)
-        if current_month == 12:
-            next_month = datetime(current_year + 1, 1, 1)
-        else:
-            next_month = datetime(current_year, current_month + 1, 1)
+        month_start, next_month = _month_bounds(current_year, current_month)
         
         month_spent = Transaction.objects.filter(
             user=request.user,
@@ -633,11 +630,13 @@ def dashboard(request):
             created_at__lt=next_month
         ).aggregate(Sum('amount'))['amount__sum'] or 0
         
+        percentage = (month_spent / current_budget.amount * 100) if current_budget.amount > 0 else 0
         budget_info = {
             'budget': current_budget,
             'spent': month_spent,
             'remaining': current_budget.amount - month_spent,
-            'percentage': (month_spent / current_budget.amount * 100) if current_budget.amount > 0 else 0,
+            'percentage': percentage,
+            'percentage_width': f'{min(float(percentage), 100):.2f}',
             'is_exceeded': month_spent > current_budget.amount
         }
     except Budget.DoesNotExist:
@@ -647,6 +646,7 @@ def dashboard(request):
         'transactions': transactions_page, 
         'total': total,
         'count': count,
+        'average': average,
         'categories': categories,
         'selected_category': category_filter,
         'search_query': search_query,
@@ -945,7 +945,7 @@ def _parse_export_date(value):
 def _filtered_export_transactions(request):
     transactions = Transaction.objects.filter(user=request.user).select_related('category').order_by('-created_at')
 
-    category_filter = request.GET.get('category')
+    category_filter = request.GET.get('category', '')
     if category_filter:
         transactions = transactions.filter(category__name=category_filter)
 
@@ -959,7 +959,7 @@ def _filtered_export_transactions(request):
         end = timezone.make_aware(datetime.combine(date_to + timedelta(days=1), datetime.min.time()))
         transactions = transactions.filter(created_at__lt=end)
 
-    search_query = request.GET.get('search')
+    search_query = request.GET.get('search', '')
     if search_query:
         transactions = transactions.filter(note__icontains=search_query)
 
@@ -1098,11 +1098,7 @@ def set_budget(request):
             })
     
     # Tính chi tiêu tháng này
-    current_month_start = datetime(current_year, current_month, 1)
-    if current_month == 12:
-        next_month_start = datetime(current_year + 1, 1, 1)
-    else:
-        next_month_start = datetime(current_year, current_month + 1, 1)
+    current_month_start, next_month_start = _month_bounds(current_year, current_month)
     
     current_month_total = Transaction.objects.filter(
         user=request.user,
@@ -1125,11 +1121,7 @@ def budget_history(request):
     # Tính chi tiêu cho mỗi budget
     budget_data = []
     for budget in budgets:
-        month_start = datetime(budget.year, budget.month, 1)
-        if budget.month == 12:
-            next_month = datetime(budget.year + 1, 1, 1)
-        else:
-            next_month = datetime(budget.year, budget.month + 1, 1)
+        month_start, next_month = _month_bounds(budget.year, budget.month)
         
         spent = Transaction.objects.filter(
             user=request.user,
@@ -1146,6 +1138,7 @@ def budget_history(request):
             'spent': spent,
             'remaining': remaining,
             'percentage': min(percentage, 100),  # Cap at 100 for display
+            'percentage_width': f'{min(float(percentage), 100):.2f}',
             'is_exceeded': is_exceeded
         })
     

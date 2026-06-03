@@ -1,3 +1,4 @@
+{% load money_filters %}
 <script src="https://cdn.tailwindcss.com"></script>
 <body class="bg-slate-50">
     <div class="min-h-screen flex items-center justify-center py-12 px-4">
@@ -26,13 +27,13 @@
             {% if current_month_total %}
             <div class="bg-slate-50 p-4 rounded-lg mb-6 space-y-2">
                 <p class="text-sm text-gray-600">Chi tiêu tháng này</p>
-                <p class="text-xl font-bold text-rose-600">{{ current_month_total|floatformat:0 }}đ</p>
+                <p class="text-xl font-bold text-rose-600">{{ current_month_total|vnd }}</p>
                 {% if budget %}
                     <p class="text-sm text-gray-600">Còn lại</p>
                     {% if remaining >= 0 %}
-                        <p class="text-lg font-bold text-green-600">{{ remaining|floatformat:0 }}đ</p>
+                        <p class="text-lg font-bold text-green-600">{{ remaining|vnd }}</p>
                     {% else %}
-                        <p class="text-lg font-bold text-red-600">Vượt {{ remaining|add:0|stringformat:"-d" }}đ</p>
+                        <p class="text-lg font-bold text-red-600">Vượt {{ remaining|vnd_abs }}</p>
                     {% endif %}
                 {% endif %}
             </div>

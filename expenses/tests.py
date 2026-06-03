@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from io import BytesIO
 from zipfile import ZipFile
-from .models import Category, CategoryRule, RecurringExpense, SplitBill, Transaction
+from .models import Budget, Category, CategoryRule, RecurringExpense, SplitBill, Transaction
 from .ai_services import ExpenseAI
 import json
 from unittest.mock import patch
@@ -230,6 +230,20 @@ class FeatureWorkflowTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("\u0102n u\u1ed1ng", response.context['result']['answer'])
+
+    def test_dashboard_formats_money_with_vietnamese_grouping(self):
+        Budget.objects.create(user=self.user, amount=5000000)
+        Transaction.objects.create(user=self.user, amount=1000000, category=self.food, note='Tiền ăn')
+        Transaction.objects.create(user=self.user, amount=973000, category=self.other, note='Khác')
+
+        response = self.client.get('/dashboard/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '1.973.000đ')
+        self.assertContains(response, '986.500đ')
+        self.assertContains(response, '5.000.000đ')
+        self.assertContains(response, '3.027.000đ')
+        self.assertNotContains(response, 'value="None"')
 
     def test_smart_report_answers_detailed_category_question(self):
         Transaction.objects.create(user=self.user, amount=100000, category=self.food, note='Cơm văn phòng')

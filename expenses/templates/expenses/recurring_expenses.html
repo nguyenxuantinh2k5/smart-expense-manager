@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+{% load money_filters %}
 <head>
     <meta charset="UTF-8">
     <title>Chi tiêu định kỳ</title>
@@ -69,7 +70,7 @@
                         <div class="py-3">
                             <div class="flex justify-between">
                                 <span class="font-medium">{{ item.title }}</span>
-                                <span>{{ item.amount|floatformat:0 }}đ</span>
+                                <span>{{ item.amount|vnd }}</span>
                             </div>
                             <p class="text-sm text-slate-500">
                                 {{ item.get_frequency_display }} · đến hạn {{ item.next_due_date|date:"d/m/Y" }}

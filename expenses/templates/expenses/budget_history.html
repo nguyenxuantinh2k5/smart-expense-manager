@@ -1,3 +1,4 @@
+{% load money_filters %}
 <script src="https://cdn.tailwindcss.com"></script>
 <body class="bg-slate-50 p-6 font-sans">
     <div class="max-w-4xl mx-auto">
@@ -30,7 +31,7 @@
                         <div class="mb-4">
                             <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                                 <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-4 rounded-full transition-all duration-300"
-                                     style="width: {{ item.percentage }}%"></div>
+                                     style="width: {{ item.percentage_width }}%"></div>
                             </div>
                         </div>
 
@@ -38,18 +39,18 @@
                         <div class="grid grid-cols-3 gap-4">
                             <div class="bg-slate-50 p-4 rounded-lg text-center">
                                 <p class="text-xs text-gray-600 uppercase">Budget</p>
-                                <p class="text-lg font-bold text-slate-800">{{ item.budget.amount|floatformat:0 }}đ</p>
+                                <p class="text-lg font-bold text-slate-800">{{ item.budget.amount|vnd }}</p>
                             </div>
                             <div class="bg-slate-50 p-4 rounded-lg text-center">
                                 <p class="text-xs text-gray-600 uppercase">Chi Tiêu</p>
-                                <p class="text-lg font-bold text-rose-600">{{ item.spent|floatformat:0 }}đ</p>
+                                <p class="text-lg font-bold text-rose-600">{{ item.spent|vnd }}</p>
                             </div>
                             <div class="bg-slate-50 p-4 rounded-lg text-center">
                                 <p class="text-xs text-gray-600 uppercase">Còn Lại</p>
                                 {% if item.remaining >= 0 %}
-                                    <p class="text-lg font-bold text-green-600">{{ item.remaining|floatformat:0 }}đ</p>
+                                    <p class="text-lg font-bold text-green-600">{{ item.remaining|vnd }}</p>
                                 {% else %}
-                                    <p class="text-lg font-bold text-red-600">{{ item.remaining|floatformat:0 }}đ</p>
+                                    <p class="text-lg font-bold text-red-600">{{ item.remaining|vnd }}</p>
                                 {% endif %}
                             </div>
                         </div>

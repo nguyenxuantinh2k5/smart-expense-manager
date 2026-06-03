@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+{% load money_filters %}
 <head>
     <meta charset="UTF-8">
     <title>Dashboard - AI Expense</title>
@@ -42,17 +43,17 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-blue-500">
                 <p class="text-slate-400 text-sm font-medium uppercase">Tổng chi tiêu</p>
-                <p class="text-2xl font-bold text-slate-800 mt-1">{{ total|floatformat:0|default:0 }}đ</p>
+                <p class="text-2xl font-bold text-slate-800 mt-1">{{ total|vnd }}</p>
             </div>
             <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-emerald-500">
                 <p class="text-slate-400 text-sm font-medium uppercase">Số giao dịch</p>
-                <p class="text-2xl font-bold text-slate-800 mt-1">{{ count }} lần</p>
+                <p class="text-2xl font-bold text-slate-800 mt-1">{{ count|group_number }} lần</p>
             </div>
             <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-purple-500">
                 <p class="text-slate-400 text-sm font-medium uppercase">Trung bình/giao dịch</p>
                 <p class="text-2xl font-bold text-slate-800 mt-1">
                     {% if count > 0 %}
-                        {{ total|add:0|floatformat:0 }}đ
+                        {{ average|vnd }}
                     {% else %}
                         0đ
                     {% endif %}
@@ -74,7 +75,7 @@
                         {% if budget_info.is_exceeded %}
                             <div class="bg-red-500 h-4 rounded-full" style="width: 100%"></div>
                         {% else %}
-                            <div class="bg-blue-500 h-4 rounded-full" style="width: {{ budget_info.percentage }}%"></div>
+                            <div class="bg-blue-500 h-4 rounded-full" style="width: {{ budget_info.percentage_width }}%"></div>
                         {% endif %}
                     </div>
                 </div>
@@ -83,18 +84,18 @@
                 <div class="grid grid-cols-3 gap-4">
                     <div>
                         <p class="text-sm text-gray-600">Budget</p>
-                        <p class="text-lg font-bold text-slate-800">{{ budget_info.budget.amount|floatformat:0 }}đ</p>
+                        <p class="text-lg font-bold text-slate-800">{{ budget_info.budget.amount|vnd }}</p>
                     </div>
                     <div>
                         <p class="text-sm text-gray-600">Chi Tiêu</p>
-                        <p class="text-lg font-bold text-rose-600">{{ budget_info.spent|floatformat:0 }}đ</p>
+                        <p class="text-lg font-bold text-rose-600">{{ budget_info.spent|vnd }}</p>
                     </div>
                     <div>
                         <p class="text-sm text-gray-600">Còn Lại</p>
                         {% if budget_info.remaining >= 0 %}
-                            <p class="text-lg font-bold text-green-600">{{ budget_info.remaining|floatformat:0 }}đ</p>
+                            <p class="text-lg font-bold text-green-600">{{ budget_info.remaining|vnd }}</p>
                         {% else %}
-                            <p class="text-lg font-bold text-red-600">Vượt {{ budget_info.remaining|add:0|stringformat:"-d" }}đ</p>
+                            <p class="text-lg font-bold text-red-600">Vượt {{ budget_info.remaining|vnd_abs }}</p>
                         {% endif %}
                     </div>
                 </div>
@@ -174,7 +175,7 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-slate-700 max-w-xs overflow-hidden overflow-ellipsis">{{ item.note }}</td>
-                            <td class="px-6 py-4 text-right font-bold text-rose-500">{{ item.amount|floatformat:0 }}đ</td>
+                            <td class="px-6 py-4 text-right font-bold text-rose-500">{{ item.amount|vnd }}</td>
                             <td class="px-6 py-4 text-center space-x-2">
                                 <a href="{% url 'edit_expense' item.id %}" class="inline-block bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-xs font-semibold hover:bg-yellow-200 transition">✏️ Sửa</a>
                                 <a href="{% url 'delete_expense' item.id %}" class="inline-block bg-red-100 text-red-700 px-3 py-1 rounded text-xs font-semibold hover:bg-red-200 transition">🗑️ Xóa</a>

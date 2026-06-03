@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+{% load money_filters %}
 <head>
     <meta charset="UTF-8">
     <title>Chia bill</title>
@@ -58,15 +59,15 @@
                 {% if result_bill %}
                     <div class="mb-4">
                         <p class="text-slate-700">{{ result_bill.title }}</p>
-                        <p class="text-2xl font-bold text-slate-900">{{ result_bill.total_amount|floatformat:0 }}đ</p>
-                        <p class="text-sm text-slate-500">Mỗi người: {{ result_bill.share_amount|floatformat:0 }}đ</p>
+                        <p class="text-2xl font-bold text-slate-900">{{ result_bill.total_amount|vnd }}</p>
+                        <p class="text-sm text-slate-500">Mỗi người: {{ result_bill.share_amount|vnd }}</p>
                         <p class="text-xs text-emerald-700 mt-2">Nếu đã chọn lưu, phần của bạn đã được thêm vào lịch sử chi tiêu.</p>
                     </div>
                     <div class="divide-y">
                         {% for participant in result_bill.participants.all %}
                             <div class="flex justify-between py-3">
                                 <span>{{ participant.name }}</span>
-                                <span class="font-semibold">{{ participant.share_amount|floatformat:0 }}đ</span>
+                                <span class="font-semibold">{{ participant.share_amount|vnd }}</span>
                             </div>
                         {% endfor %}
                     </div>
@@ -83,9 +84,9 @@
                     <div class="py-3">
                         <div class="flex justify-between">
                             <span class="font-medium">{{ bill.title }}</span>
-                            <span>{{ bill.total_amount|floatformat:0 }}đ</span>
+                            <span>{{ bill.total_amount|vnd }}</span>
                         </div>
-                        <p class="text-sm text-slate-500">{{ bill.people_count }} người, mỗi người {{ bill.share_amount|floatformat:0 }}đ</p>
+                        <p class="text-sm text-slate-500">{{ bill.people_count|group_number }} người, mỗi người {{ bill.share_amount|vnd }}</p>
                     </div>
                 {% empty %}
                     <p class="text-slate-500">Chưa có bill nào.</p>
